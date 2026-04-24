@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+  <title>🔥 SocialPulse · Pro Social Media Dashboard + Random User</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter',sans-serif; }
+    :root {
+      --bg: #FAFBFC;
+      --surface: #FFFFFF;
+      --text: #1E293B;
+      --border: #E2E8F0;
+      --primary: #2563EB;
+      --primary-light: #DBEAFE;
+      --accent: #EC4899;
+      --success: #10B981;
+      --warning: #F59E0B;
+      --instagram: #E4405F;
+      --twitter: #1DA1F2;
+      --facebook: #1877F2;
+      --tiktok: #000000;
+      --shadow: 0 10px 30px rgba(0,0,0,0.05);
+    }
+    body.dark {
+      --bg: #0B1120;
+      --surface: #1E293B;
+      --text: #F1F5F9;
+      --border: #334155;
+      --primary: #3B82F6;
+      --primary-light: #1E3A5F;
+      --accent: #F472B6;
+    }
+    body { background: var(--bg); color: var(--text); display: flex; height: 100vh; transition: background 0.2s; }
+    .sidebar { width: 280px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 28px 0; overflow-y: auto; transition: transform 0.25s; z-index: 200; position: relative; }
+    .sidebar.collapsed { transform: translateX(-100%); width: 280px; position: fixed; }
+    .logo { padding: 0 24px 28px; font-size: 1.6rem; font-weight: 700; display: flex; gap: 10px; border-bottom: 1px solid var(--border); color: var(--primary); }
+    .logo i { color: var(--accent); }
+    .nav-item { display: flex; align-items: center; gap: 14px; padding: 12px 20px; margin: 4px 12px; border-radius: 16px; font-weight: 500; background: transparent; border: none; color: var(--text); cursor: pointer; width: calc(100% - 24px); text-align: left; }
+    .nav-item i { width: 24px; color: var(--primary); }
+    .nav-item.active { background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; }
+    .nav-item.active i { color: white; }
+    .badge { background: var(--accent); color: white; border-radius: 30px; padding: 2px 8px; font-size: 0.7rem; margin-left: auto; }
+    .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .top-bar { padding: 16px 28px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .hamburger { display: none; background: none; border: none; font-size: 1.6rem; color: var(--primary); cursor: pointer; margin-right: 16px; }
+    .content { flex: 1; overflow-y: auto; padding: 28px 32px; }
+    .view { display: none; }
+    .view.active { display: block; }
+    .card { background: var(--surface); border-radius: 28px; padding: 24px; border: 1px solid var(--border); margin-bottom: 24px; box-shadow: var(--shadow); transition: transform 0.2s; }
+    .card:hover { transform: translateY(-2px); }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+    .flex { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .stat-card { background: var(--surface); border-radius: 20px; padding: 20px; border: 1px solid var(--border); }
+    .stat-value { font-size: 2rem; font-weight: 800; color: var(--primary); }
+    button { background: linear-gradient(135deg, var(--primary), var(--accent)); border: none; padding: 10px 20px; border-radius: 40px; font-weight: 600; color: white; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+    button.outline { background: transparent; color: var(--text); border: 1px solid var(--border); }
+    button.outline:hover { background: var(--primary-light); border-color: var(--primary); }
+    .toast { position: fixed; bottom: 30px; right: 30px; background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; padding: 12px 24px; border-radius: 60px; opacity: 0; transition: 0.2s; z-index: 9999; pointer-events: none; }
+    .toast.show { opacity: 1; }
+    .post-card { background: var(--surface); border-radius: 20px; padding: 16px; border: 1px solid var(--border); margin-bottom: 12px; }
+    .post-header { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+    .post-avatar { width: 40px; height: 40px; border-radius: 50%; }
+    .platform-icon-small { width: 28px; height: 28px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; color: white; background: var(--primary); }
+    .hashtag-chip { background: var(--primary-light); padding: 5px 12px; border-radius: 40px; font-size: 0.8rem; display: inline-block; margin: 4px; cursor: pointer; }
+    .chart-container { width: 100%; height: 250px; margin-top: 16px; }
+    .random-avatar { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; margin: 0 auto 16px; border: 3px solid var(--primary); }
+    .loader-sm { display: inline-block; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .notification-dropdown { position: absolute; right: 0; top: 50px; width: 300px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 12px; z-index: 300; display: none; }
+    .notification-bell { position: relative; cursor: pointer; font-size: 1.4rem; }
+    @media (max-width: 768px) {
+      .sidebar { position: fixed; height: 100vh; width: 280px; left: 0; top: 0; }
+      .sidebar.collapsed { transform: translateX(-100%); }
+      .hamburger { display: block; }
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .content { padding: 20px 16px; }
+    }
+  </style>
+</head>
+<body>
+<div class="sidebar" id="sidebar">
+  <div class="logo"><i class="fas fa-chart-simple"></i> SocialPulse</div>
+  <div style="flex:1;">
+    <button class="nav-item active" data-view="dashboard"><i class="fas fa-chart-line"></i> Dashboard</button>
+    <button class="nav-item" data-view="posts"><i class="fas fa-image"></i> Posts</button>
+    <button class="nav-item" data-view="audience"><i class="fas fa-users"></i> Audience</button>
+    <button class="nav-item" data-view="engagement"><i class="fas fa-heart"></i> Engagement</button>
+    <button class="nav-item" data-view="schedule"><i class="fas fa-calendar"></i> Planner</button>
+    <button class="nav-item" data-view="analytics"><i class="fas fa-chart-bar"></i> Analytics</button>
+    <button class="nav-item" data-view="messages"><i class="fas fa-comment-dots"></i> Inbox <span class="badge" id="msgBadge">3</span></button>
+    <button class="nav-item" data-view="randomuser"><i class="fas fa-user-plus"></i> Random User</button>
+  </div>
+  <div style="padding:20px;">
+    <button class="outline" id="themeToggle"><i class="fas fa-moon"></i> Dark mode</button>
+    <button class="outline" id="exportCSV"><i class="fas fa-file-csv"></i> Export CSV</button>
+  </div>
+</div>
+<div class="main-wrapper">
+  <div class="top-bar">
+    <div class="flex"><button class="hamburger" id="hamburgerBtn"><i class="fas fa-bars"></i></button><h2 id="viewTitle">Dashboard</h2></div>
+    <div class="flex"><div class="notification-bell" id="notifBell"><i class="far fa-bell"></i><span class="badge" id="notifCount" style="position:absolute; top:-6px; right:-10px;">2</span><div class="notification-dropdown" id="notifDropdown"><div id="notifList"></div><button class="outline small" id="markRead" style="margin-top:8px;">Mark all read</button></div></div><button id="undoBtn" class="outline"><i class="fas fa-undo"></i></button><button id="redoBtn" class="outline"><i class="fas fa-redo"></i></button></div>
+  </div>
+  <div class="content">
+    <!-- DASHBOARD -->
+    <div id="dashboardView" class="view active">
+      <div class="grid-4">
+        <div class="stat-card"><div class="flex" style="justify-content:space-between;"><span class="stat-label">Total Followers</span><i class="fab fa-instagram"></i></div><div class="stat-value" id="totalFollowers">31.2K</div><span class="trend-up">⬆️ +12.4%</span></div>
+        <div class="stat-card"><div class="flex" style="justify-content:space-between;"><span class="stat-label">Reach (30d)</span><i class="fas fa-eye"></i></div><div class="stat-value">186K</div><span class="trend-up">⬆️ +28%</span></div>
+        <div class="stat-card"><div class="flex" style="justify-content:space-between;"><span class="stat-label">Engagement Rate</span><i class="fas fa-heart" style="color:#EF4444;"></i></div><div class="stat-value">7.1%</div><span class="trend-up">⬆️ +1.8%</span></div>
+        <div class="stat-card"><div class="flex" style="justify-content:space-between;"><span class="stat-label">Avg CTR</span><i class="fas fa-mouse-pointer"></i></div><div class="stat-value">3.4%</div><span class="trend-up">⬆️ +0.6%</span></div>
+      </div>
+      <div class="grid-2">
+        <div class="card"><h3><i class="fas fa-lightbulb"></i> AI Content Ideas</h3><div id="contentIdeasList"></div><button id="refreshIdeasBtn" class="outline" style="margin-top:12px;"><i class="fas fa-sync-alt"></i> Refresh Ideas</button></div>
+        <div class="card"><h3>🏆 Top Performing Posts</h3><div id="topPostsContainer"></div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card"><h3><i class="fas fa-story"></i> Story Insights</h3><div class="grid-2"><div><span class="stat-label">Avg Views</span><div class="stat-value">8.2K</div></div><div><span class="stat-label">Completion</span><div class="stat-value">72%</div></div></div><div class="chart-container"><canvas id="storyChart"></canvas></div></div>
+        <div class="card"><h3><i class="fas fa-hashtag"></i> Hashtag Performance</h3><div id="hashtagList"></div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card"><h3><i class="fas fa-chart-simple"></i> Competitor Benchmark</h3><div class="chart-container"><canvas id="competitorChart"></canvas></div></div>
+        <div class="card"><h3>📈 Predicted Growth (Next 30d)</h3><div class="chart-container"><canvas id="forecastChart"></canvas></div></div>
+      </div>
+    </div>
+    <!-- POSTS VIEW -->
+    <div id="postsView" class="view"><div class="card"><h3>📸 All Posts</h3><div class="flex" style="margin-bottom:16px;"><input type="text" id="postSearch" placeholder="Search..." class="search" style="padding:8px 16px; border-radius:40px; border:1px solid var(--border); flex:1;"><select id="postPlatformFilter" class="outline" style="padding:8px;"><option>All</option><option>Instagram</option><option>Twitter</option><option>TikTok</option></select></div><div id="allPostsList"></div></div></div>
+    <!-- AUDIENCE -->
+    <div id="audienceView" class="view"><div class="card"><h3>👥 Age & Gender</h3><div class="grid-2"><div class="chart-container"><canvas id="ageChart"></canvas></div><div class="chart-container"><canvas id="genderChart"></canvas></div></div></div></div>
+    <!-- ENGAGEMENT -->
+    <div id="engagementView" class="view"><div class="card"><h3>❤️ Engagement Trend</h3><div class="chart-container"><canvas id="engagementLineChart"></canvas></div></div></div>
+    <!-- SCHEDULE PLANNER -->
+    <div id="scheduleView" class="view"><div class="card"><h3>📅 Scheduled Posts</h3><div id="scheduledList"></div><button class="outline" id="quickScheduleBtn"><i class="fas fa-plus"></i> Quick Schedule</button></div></div>
+    <!-- ANALYTICS -->
+    <div id="analyticsView" class="view"><div class="card"><h3>📊 Advanced Analytics</h3><div class="chart-container"><canvas id="advancedChart"></canvas></div></div></div>
+    <!-- MESSAGES -->
+    <div id="messagesView" class="view"><div class="card"><h3>💬 Direct Messages</h3><div id="messagesContainer"></div></div></div>
+    <!-- RANDOM USER GENERATOR -->
+    <div id="randomuserView" class="view">
+      <div class="card" style="text-align:center;">
+        <h3><i class="fas fa-user-astronaut"></i> Random User Generator</h3>
+        <img id="randomUserAvatar" class="random-avatar" src="https://randomuser.me/api/portraits/women/68.jpg">
+        <h3 id="randomUserName">Click Load Another</h3>
+        <p id="randomUserEmail"><i class="fas fa-envelope"></i> example@user.com</p>
+        <div id="randomUserLoading" style="display:none;"><div class="loader-sm"></div> Fetching...</div>
+        <div class="flex" style="justify-content:center; margin-top:16px;">
+          <button id="loadRandomUserBtn" class="accent"><i class="fas fa-sync-alt"></i> Load Another</button>
+          <button id="addMockFollowerBtn" class="outline"><i class="fas fa-user-plus"></i> Add as mock follower</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast">✨ Done!</div>
+<script>
+  (function(){
+    // Toast
+    const toast = msg => { let t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); };
+    // ==================== MOCK DATA ====================
+    const topPosts = [
+      { platform:'instagram', content:'🔥 Summer collection launch', likes:'12.4K', comments:890, engagement:'8.9%' },
+      { platform:'tiktok', content:'Dance challenge with @influencer', likes:'28.4K', comments:2450, engagement:'14.2%' },
+      { platform:'twitter', content:'Industry trends thread 🧵', likes:'5.6K', comments:342, engagement:'6.3%' }
+    ];
+    const hashtags = [
+      { tag:'#socialmediamarketing', impressions:'124K', engagement:'5.2%' },
+      { tag:'#viralreels', impressions:'98K', engagement:'7.8%' },
+      { tag:'#growthhacking', impressions:'76K', engagement:'4.1%' },
+      { tag:'#instagramtips', impressions:'112K', engagement:'6.3%' }
+    ];
+    const allPosts = [
+      { platform:'instagram', content:'Morning routine ☕', likes:3420, comments:124, time:'2h ago', avatar:'https://i.pravatar.cc/150?img=1' },
+      { platform:'tiktok', content:'Dance trend #fyp', likes:15200, comments:2300, time:'1d ago', avatar:'https://i.pravatar.cc/150?img=2' },
+      { platform:'twitter', content:'New blog post link', likes:890, comments:45, time:'3d ago', avatar:'https://i.pravatar.cc/150?img=3' }
+    ];
+    const scheduled = [
+      { platform:'Instagram', content:'Product launch 🚀', date:'May 10, 6PM' },
+      { platform:'Twitter', content:'AMA session', date:'May 12, 3PM' }
+    ];
+    const messages = [
+      { name:'Alex', msg:'Love the content!', avatar:'https://i.pravatar.cc/150?img=4' },
+      { name:'Jessica', msg:'Let’s collab?', avatar:'https://i.pravatar.cc/150?img=5' },
+      { name:'Mike', msg:'Thanks for the follow', avatar:'https://i.pravatar.cc/150?img=6' }
+    ];
+    // Render helpers
+    function renderTopPosts() {
+      let html = topPosts.map(p => `<div class="post-card"><div class="flex" style="justify-content:space-between;"><span><i class="fab fa-${p.platform}"></i> <strong>${p.platform}</strong></span><span class="badge" style="background:var(--success);">${p.engagement}</span></div><div style="margin:8px 0;">${p.content}</div><div class="flex" style="gap:16px;">❤️ ${p.likes}  💬 ${p.comments}</div></div>`).join('');
+      document.getElementById('topPostsContainer').innerHTML = html;
+    }
+    function renderHashtags() {
+      let html = hashtags.map(h => `<div class="flex" style="justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);"><span>${h.tag}</span><span>👁️ ${h.impressions}</span><span>📈 ${h.engagement}</span></div>`).join('');
+      document.getElementById('hashtagList').innerHTML = html;
+    }
+    function renderAllPosts(filter='All', search='') {
+      let filtered = allPosts.filter(p => (filter==='All' || p.platform.toLowerCase()===filter.toLowerCase()) && (p.content.toLowerCase().includes(search.toLowerCase()) || search===''));
+      let html = filtered.map(p => `<div class="post-card"><div class="post-header"><img src="${p.avatar}" class="post-avatar"><div><strong>${p.platform}</strong><br><span class="small">${p.time}</span></div></div><div>${p.content}</div><div class="flex">❤️ ${p.likes}  💬 ${p.comments}</div></div>`).join('');
+      document.getElementById('allPostsList').innerHTML = html || '<p>No posts found</p>';
+    }
+    function renderSchedule() {
+      let html = scheduled.map(s => `<div class="flex" style="justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border);"><div><i class="fab fa-${s.platform.toLowerCase()}"></i> <strong>${s.content}</strong><br><small>${s.date}</small></div><button class="outline small">Edit</button></div>`).join('');
+      document.getElementById('scheduledList').innerHTML = html;
+    }
+    function renderMessages() {
+      let html = messages.map(m => `<div class="flex" style="justify-content:space-between; padding:12px; border-bottom:1px solid var(--border);"><div class="flex"><img src="${m.avatar}" style="width:40px;border-radius:50%;"><div><strong>${m.name}</strong><br>${m.msg}</div></div><button class="outline small">Reply</button></div>`).join('');
+      document.getElementById('messagesContainer').innerHTML = html;
+    }
+    // Content Ideas
+    const ideaBank = [
+      "🎨 Create a poll about your audience's favorite content type",
+      "📸 Share a blooper reel – authenticity wins",
+      "💡 Post a carousel: '5 tools every creator needs'",
+      "🎥 React to a trending audio with your niche twist",
+      "📊 Share a behind-the-scenes of your workflow",
+      "🗳️ Ask followers: 'What topic should I cover next?'"
+    ];
+    function renderContentIdeas() {
+      let shuffled = [...ideaBank].sort(()=>0.5-Math.random()).slice(0,3);
+      let html = shuffled.map((idea, idx) => `<div class="flex" style="justify-content:space-between; margin-bottom:12px;"><span>✨ ${idea}</span><button class="outline small" onclick="copyText('${idea.replace(/'/g, "\\'")}')">Copy</button></div>`).join('');
+      document.getElementById('contentIdeasList').innerHTML = html;
+    }
+    window.copyText = (txt) => { navigator.clipboard.writeText(txt); toast('📋 Idea copied!'); };
+    // Notifications
+    function renderNotifications() {
+      let notifs = [
+        { msg:'🚀 Your post reached 10K likes', unread:true },
+        { msg:'👥 50 new followers', unread:true },
+        { msg:'📊 Weekly report ready', unread:false }
+      ];
+      let html = notifs.map(n => `<div class="notification-item ${n.unread ? 'unread' : ''}" style="padding:8px; border-bottom:1px solid var(--border);">${n.msg}</div>`).join('');
+      document.getElementById('notifList').innerHTML = html;
+      document.getElementById('notifCount').innerText = notifs.filter(n=>n.unread).length;
+    }
+    // Charts init all
+    let charts = {};
+    function initCharts() {
+      if(charts.story) charts.story.destroy();
+      let storyCtx = document.getElementById('storyChart').getContext('2d');
+      charts.story = new Chart(storyCtx, { type:'line', data:{ labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], datasets:[{ label:'Story Views', data:[7500,8200,7900,8600,9100,8800,9400], borderColor:'#F59E0B', fill:true }] }, options:{ responsive:true, maintainAspectRatio:true } });
+      if(charts.competitor) charts.competitor.destroy();
+      let compCtx = document.getElementById('competitorChart').getContext('2d');
+      charts.competitor = new Chart(compCtx, { type:'bar', data:{ labels:['Your Brand','Brand A','Brand B'], datasets:[{ label:'Followers (K)', data:[31.2,28.5,35.1], backgroundColor:'#2563EB' },{ label:'Engagement %', data:[7.1,5.8,6.4], backgroundColor:'#EC4899' }] }, options:{ responsive:true } });
+      if(charts.forecast) charts.forecast.destroy();
+      let foreCtx = document.getElementById('forecastChart').getContext('2d');
+      charts.forecast = new Chart(foreCtx, { type:'line', data:{ labels:['Week1','Week2','Week3','Week4'], datasets:[{ label:'Forecast Followers', data:[31200,32100,32900,33700], borderColor:'#10B981', fill:true }] }, options:{ responsive:true } });
+      if(charts.age) charts.age.destroy();
+      let ageCtx = document.getElementById('ageChart').getContext('2d');
+      charts.age = new Chart(ageCtx, { type:'bar', data:{ labels:['13-17','18-24','25-34','35-44','45+'], datasets:[{ label:'Followers', data:[2800,12400,10200,4200,1600], backgroundColor:'#3B82F6' }] } });
+      if(charts.gender) charts.gender.destroy();
+      let genderCtx = document.getElementById('genderChart').getContext('2d');
+      charts.gender = new Chart(genderCtx, { type:'pie', data:{ labels:['Female','Male','Other'], datasets:[{ data:[18200,11800,1200], backgroundColor:['#EC4899','#2563EB','#10B981'] }] } });
+      if(charts.engagementLine) charts.engagementLine.destroy();
+      let engCtx = document.getElementById('engagementLineChart').getContext('2d');
+      charts.engagementLine = new Chart(engCtx, { type:'line', data:{ labels:['Week1','Week2','Week3','Week4'], datasets:[{ label:'Engagement %', data:[5.8,6.4,6.9,7.1], borderColor:'#EC4899' }] } });
+      if(charts.advanced) charts.advanced.destroy();
+      let advCtx = document.getElementById('advancedChart').getContext('2d');
+      charts.advanced = new Chart(advCtx, { type:'line', data:{ labels:['Jan','Feb','Mar','Apr','May','Jun'], datasets:[{ label:'Reach (K)', data:[98,112,134,158,174,186], borderColor:'#2563EB' },{ label:'Engagement %', data:[4.2,4.8,5.5,6.2,6.8,7.1], borderColor:'#EC4899' }] } });
+    }
+    // Random User Generator (API)
+    let currentRandomUser = null;
+    async function fetchRandomUser() {
+      const btn = document.getElementById('loadRandomUserBtn');
+      if(btn.disabled) return;
+      btn.disabled = true;
+      document.getElementById('randomUserLoading').style.display = 'inline-block';
+      try {
+        let res = await fetch('https://randomuser.me/api/');
+        let data = await res.json();
+        let u = data.results[0];
+        currentRandomUser = { name: `${u.name.first} ${u.name.last}`, email: u.email, picture: u.picture.large };
+        document.getElementById('randomUserAvatar').src = currentRandomUser.picture;
+        document.getElementById('randomUserName').innerText = currentRandomUser.name;
+        document.getElementById('randomUserEmail').innerHTML = `<i class="fas fa-envelope"></i> ${currentRandomUser.email}`;
+        toast(`✅ Loaded: ${currentRandomUser.name}`);
+      } catch(e) { toast('⚠️ API error, try again'); }
+      finally {
+        document.getElementById('randomUserLoading').style.display = 'none';
+        btn.disabled = false;
+      }
+    }
+    function addMockFollower() {
+      if(currentRandomUser) {
+        let badge = document.getElementById('msgBadge');
+        badge.innerText = parseInt(badge.innerText) + 1;
+        toast(`🎉 ${currentRandomUser.name} added as a follower!`);
+      } else toast('Load a random user first');
+    }
+    // CSV Export
+    function exportCSV() {
+      let rows = [["Metric","Value"],["Total Followers","31.2K"],["Engagement Rate","7.1%"],["Reach (30d)","186K"],["Avg Story Views","8.2K"]];
+      let csv = rows.map(r => r.join(",")).join("\n");
+      let blob = new Blob([csv], {type:'text/csv'});
+      let link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'socialpulse_data.csv';
+      link.click();
+      toast('CSV exported');
+    }
+    // Theme, navigation, events
+    function toggleTheme() { document.body.classList.toggle('dark'); localStorage.setItem('theme', document.body.classList.contains('dark')?'dark':'light'); }
+    if(localStorage.getItem('theme') === 'dark') toggleTheme();
+    document.getElementById('themeToggle').onclick = toggleTheme;
+    document.getElementById('exportCSV').onclick = exportCSV;
+    document.getElementById('hamburgerBtn').onclick = () => document.getElementById('sidebar').classList.toggle('collapsed');
+    document.getElementById('refreshIdeasBtn').onclick = () => { renderContentIdeas(); toast('Ideas refreshed!'); };
+    document.getElementById('loadRandomUserBtn').onclick = fetchRandomUser;
+    document.getElementById('addMockFollowerBtn').onclick = addMockFollower;
+    document.getElementById('quickScheduleBtn').onclick = () => toast('📅 Schedule modal would open');
+    // Search/filter for posts
+    document.getElementById('postSearch').addEventListener('input', (e) => { let filter = document.getElementById('postPlatformFilter').value; renderAllPosts(filter, e.target.value); });
+    document.getElementById('postPlatformFilter').addEventListener('change', (e) => { let search = document.getElementById('postSearch').value; renderAllPosts(e.target.value, search); });
+    // Navigation
+    const views = { dashboard:'dashboardView', posts:'postsView', audience:'audienceView', engagement:'engagementView', schedule:'scheduleView', analytics:'analyticsView', messages:'messagesView', randomuser:'randomuserView' };
+    document.querySelectorAll('[data-view]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        let view = e.currentTarget.dataset.view;
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById(views[view]).classList.add('active');
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        document.getElementById('viewTitle').innerText = view.charAt(0).toUpperCase() + view.slice(1);
+        if(view === 'dashboard') initCharts();
+        if(view === 'posts') renderAllPosts();
+        if(view === 'schedule') renderSchedule();
+        if(view === 'messages') renderMessages();
+        if(view === 'audience') initCharts();
+        if(window.innerWidth <= 768) document.getElementById('sidebar').classList.add('collapsed');
+      });
+    });
+    // Notifications dropdown
+    document.getElementById('notifBell').addEventListener('click', (e) => { e.stopPropagation(); let d = document.getElementById('notifDropdown'); d.style.display = d.style.display === 'none' ? 'block' : 'none'; });
+    document.addEventListener('click', () => document.getElementById('notifDropdown').style.display = 'none');
+    document.getElementById('markRead').onclick = () => { toast('All notifications marked read'); document.getElementById('notifCount').innerText = '0'; document.getElementById('notifDropdown').style.display = 'none'; };
+    document.getElementById('undoBtn').onclick = () => toast('Undo demo');
+    document.getElementById('redoBtn').onclick = () => toast('Redo demo');
+    // Initial renders
+    renderTopPosts();
+    renderHashtags();
+    renderAllPosts();
+    renderSchedule();
+    renderMessages();
+    renderContentIdeas();
+    renderNotifications();
+    initCharts();
+    fetchRandomUser(); // preload
+    toast('🚀 SocialPulse Pro ready!');
+  })();
+</script>
+</body>
+</html>
